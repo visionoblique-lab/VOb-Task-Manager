@@ -1248,8 +1248,8 @@
         
         // Configuration Dropbox (remplacez par votre App Key)
         const DROPBOX_CONFIG = {
-            appKey: '75si64bjpg6d7jx', // À remplacer par votre clé - 75si64bjpg6d7jx or YOUR_DROPBOX_APP_KEY
-            redirectUri: 'https://visionoblique-lab.github.io/VOb-Task-Manager/index.html',
+            appKey: '75si64bjpg6d7jx', // À remplacer par votre clé
+            redirectUri: 'https://visionoblique-lab.github.io/VOb-Task-Manager/',
             fileName: '/TimeSheet/timesheet_data.json'
         };
         
@@ -1358,11 +1358,12 @@
                 return;
             }
             
-            // Générer l'URL d'authentification Dropbox OAuth 2.0
+            // CORRIGÉ : URL d'authentification Dropbox OAuth 2.0 avec les bons paramètres
             const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
                 `client_id=${DROPBOX_CONFIG.appKey}&` +
                 `redirect_uri=${encodeURIComponent(DROPBOX_CONFIG.redirectUri)}&` +
-                `response_type=token&` +
+                `response_type=code&` +  // CHANGÉ : 'code' au lieu de 'token'
+                `token_access_type=offline&` +  // AJOUTÉ : pour avoir un refresh token
                 `state=dropbox_auth`;
             
             // Ouvrir la page d'authentification
@@ -1370,27 +1371,85 @@
         }
         
         function verifierTokenRetourAuth() {
-            // Vérifier si on a un token dans l'URL (retour OAuth)
-            const hash = window.location.hash;
-            if (hash.includes('access_token') && hash.includes('state=dropbox_auth')) {
-                const params = new URLSearchParams(hash.substring(1));
-                const accessToken = params.get('access_token');
-                
-                if (accessToken) {
-                    dropboxAuth.accessToken = accessToken;
-                    dropboxAuth.connected = true;
-                    sauvegarderParametresAuth();
-                    
-                    // Nettoyer l'URL
-                    window.history.replaceState({}, document.title, window.location.pathname);
-                    
-                    // Première synchronisation
-                    synchroniserMaintenant();
-                    
-                    ajouterHistoriqueSync('Connexion établie avec Dropbox', 'success');
-                    afficherNotification('✅ Connecté à Dropbox avec succès!');
-                }
+            // CORRIGÉ : Vérifier si on a un code d'autorisation dans l'URL
+            const urlParams = new URLSearchParams(window.location.search);
+            const code = urlParams.get('code');
+            const state = urlParams.get('state');
+            
+            if (code && state === 'dropbox_auth') {
+                // Échanger le code contre un access token
+                echangerCodeContreToken(code);
             }
+        }
+        
+        // NOUVELLE FONCTION : Échanger le code d'autorisation contre un access token
+        async function echangerCodeContreToken(code) {
+            try {
+                afficherIndicateurSync('syncing', '⏳ Connexion...');
+                
+                // ATTENTION : En production, cet échange doit se faire côté serveur
+                // pour des raisons de sécurité (le client_secret ne doit pas être exposé)
+                const response = await fetch('https://api.dropboxapi.com/oauth2/token', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: new URLSearchParams({
+                        code: code,
+                        grant_type: 'authorization_code',
+                        client_id: DROPBOX_CONFIG.appKey,
+                        redirect_uri: DROPBOX_CONFIG.redirectUri,
+                        // client_secret: 'VOTRE_CLIENT_SECRET' // À AJOUTER en production
+                    })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Erreur HTTP: ${response.status}`);
+                }
+                
+                const tokenData = await response.json();
+                
+                dropboxAuth.accessToken = tokenData.access_token;
+                dropboxAuth.connected = true;
+                sauvegarderParametresAuth();
+                
+                // Nettoyer l'URL
+                window.history.replaceState({}, document.title, window.location.pathname);
+                
+                // Première synchronisation
+                await synchroniserMaintenant();
+                
+                ajouterHistoriqueSync('Connexion établie avec Dropbox', 'success');
+                afficherNotification('✅ Connecté à Dropbox avec succès!');
+                mettreAJourStatutCloud();
+                
+            } catch (error) {
+                console.error('Erreur lors de l\'échange du code:', error);
+                
+                // SOLUTION DE CONTOURNEMENT : Mode de démo
+                if (confirm('❌ Erreur de connexion Dropbox.\n\n🔧 Voulez-vous activer le mode DÉMO ?\n\n(Simulera la synchronisation sans vraie connexion Dropbox)')) {
+                    activerModeDemo();
+                }
+                
+                ajouterHistoriqueSync('Erreur de connexion: ' + error.message, 'error');
+                afficherIndicateurSync('error', '❌ Erreur connexion');
+            }
+        }
+        
+        // NOUVELLE FONCTION : Mode démo pour tester sans configuration Dropbox complète
+        function activerModeDemo() {
+            dropboxAuth.accessToken = 'demo_token_12345';
+            dropboxAuth.connected = true;
+            dropboxAuth.modeDemo = true;
+            sauvegarderParametresAuth();
+            
+            // Nettoyer l'URL
+            window.history.replaceState({}, document.title, window.location.pathname);
+            
+            ajouterHistoriqueSync('Mode DÉMO activé', 'info');
+            afficherIndicateurSync('connected', '🎭 Mode Démo');
+            afficherNotification('🎭 Mode DÉMO Dropbox activé');
+            mettreAJourStatutCloud();
         }
         
         async function synchroniserMaintenant() {
@@ -2991,4 +3050,3 @@
     </script>
 </body>
 </html>
-            
