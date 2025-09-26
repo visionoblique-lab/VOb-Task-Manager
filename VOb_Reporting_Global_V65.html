@@ -1,0 +1,2994 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestionnaire de Temps - Projets</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Calibri, Arial, sans-serif;
+            background: #f0f0f0;
+            font-size: 13px;
+        }
+        
+        .excel-container {
+            background: white;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        /* Zone de travail */
+        .excel-workspace {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        /* Onglets de feuilles */
+        .sheet-tabs {
+            background: white;
+            border-bottom: 2px solid #217346;
+            display: flex;
+            align-items: center;
+            padding: 0 10px;
+            height: 40px;
+        }
+        
+        .sheet-tab {
+            background: #f5f5f5;
+            border: 1px solid #d0d0d0;
+            border-bottom: none;
+            padding: 8px 20px;
+            margin-right: 2px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: all 0.2s;
+        }
+        
+        .sheet-tab:hover {
+            background: #e8e8e8;
+        }
+        
+        .sheet-tab.active {
+            background: #217346;
+            color: white;
+            font-weight: bold;
+        }
+        
+        /* Contenu des feuilles */
+        .sheet-content {
+            flex: 1;
+            overflow: auto;
+            background: white;
+            display: none;
+        }
+        
+        .sheet-content.active {
+            display: block;
+        }
+        
+        /* Tableaux */
+        .excel-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        
+        .excel-table th {
+            background: #217346;
+            color: white;
+            border: 1px solid #165132;
+            padding: 8px;
+            text-align: left;
+            font-weight: normal;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+        
+        .excel-table td {
+            border: 1px solid #d0d0d0;
+            padding: 4px 8px;
+            background: white;
+        }
+        
+        .excel-table tr:hover td {
+            background: #f5f5f5;
+        }
+        
+        /* Inputs Excel */
+        .excel-input {
+            width: 100%;
+            border: none;
+            padding: 2px;
+            font-family: inherit;
+            font-size: inherit;
+        }
+        
+        .excel-input:focus {
+            outline: 2px solid #217346;
+            background: #fff;
+        }
+        
+        select.excel-input {
+            cursor: pointer;
+        }
+        
+        /* Zone de saisie */
+        .data-entry-section {
+            padding: 20px;
+            background: #f9f9f9;
+            margin: 10px;
+            border: 1px solid #d0d0d0;
+        }
+        
+        .entry-title {
+            font-size: 14px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #217346;
+        }
+        
+        .entry-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .entry-field {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .entry-field label {
+            font-size: 11px;
+            color: #666;
+            margin-bottom: 3px;
+        }
+        
+        .entry-field input,
+        .entry-field select {
+            padding: 4px;
+            border: 1px solid #d0d0d0;
+            font-size: 12px;
+        }
+        
+        .entry-field input:focus,
+        .entry-field select:focus {
+            outline: none;
+            border-color: #217346;
+        }
+        
+        /* Boutons Excel */
+        .excel-btn {
+            background: #217346;
+            color: white;
+            border: none;
+            padding: 6px 15px;
+            cursor: pointer;
+            font-size: 12px;
+            margin-right: 5px;
+        }
+        
+        .excel-btn:hover {
+            background: #1a5c37;
+        }
+        
+        .excel-btn.secondary {
+            background: #5b9bd5;
+        }
+        
+        .excel-btn.secondary:hover {
+            background: #4a8bc4;
+        }
+        
+        /* Tableaux de reporting */
+        .report-section {
+            padding: 20px;
+        }
+        
+        .report-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #217346;
+            margin-bottom: 15px;
+            border-bottom: 2px solid #217346;
+            padding-bottom: 5px;
+        }
+        
+        .report-controls {
+            margin-bottom: 20px;
+            padding: 10px;
+            background: #f5f5f5;
+            border: 1px solid #d0d0d0;
+        }
+        
+        .report-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+        
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .report-table th {
+            background: #217346;
+            color: white;
+            padding: 8px;
+            text-align: left;
+            font-weight: normal;
+        }
+        
+        .report-table td {
+            border: 1px solid #d0d0d0;
+            padding: 6px 8px;
+        }
+        
+        .report-table tr:nth-child(even) {
+            background: #f9f9f9;
+        }
+        
+        .report-table .total-row {
+            background: #e7e7e7;
+            font-weight: bold;
+        }
+        
+        .report-table .number {
+            text-align: right;
+        }
+        
+        .excel-table td.editable-cell {
+            position: relative;
+            transition: background-color 0.2s;
+        }
+        
+        .excel-table td.editable-cell:hover {
+            background: #e8f4fd;
+            outline: 1px solid #5b9bd5;
+        }
+        
+        .excel-table td.editing {
+            background: #fff3cd;
+            outline: 2px solid #ffc107;
+        }
+        
+        /* Message vide */
+        .empty-message {
+            text-align: center;
+            padding: 40px;
+            color: #999;
+            font-style: italic;
+        }
+        
+        /* Message d'aide */
+        .help-message {
+            background: #e8f4fd;
+            border: 1px solid #5b9bd5;
+            padding: 8px 12px;
+            margin: 10px;
+            border-radius: 3px;
+            font-size: 12px;
+            color: #004085;
+        }
+        
+        .help-message strong {
+            color: #217346;
+        }
+        
+        /* Ligne de filtres */
+        .filter-row {
+            background: #f0f0f0 !important;
+            position: sticky;
+            top: 35px;
+            z-index: 9;
+        }
+        
+        .filter-row th {
+            background: #f0f0f0 !important;
+            padding: 4px !important;
+            border: 1px solid #d0d0d0 !important;
+        }
+        
+        .filter-input {
+            width: 100%;
+            padding: 3px 5px;
+            border: 1px solid #d0d0d0;
+            font-size: 11px;
+            background: white;
+        }
+        
+        .filter-input:focus {
+            outline: none;
+            border-color: #217346;
+            background: #f0fff0;
+        }
+        
+        .filter-input::placeholder {
+            color: #999;
+            font-size: 10px;
+        }
+        
+        /* Mise en évidence des lignes filtrées */
+        .filtered-row {
+            background: #fffbf0 !important;
+        }
+        
+        .no-results {
+            text-align: center;
+            padding: 30px;
+            color: #666;
+            font-style: italic;
+            background: #f9f9f9;
+        }
+        
+        /* Style pour l'onglet projets */
+        .projet-editable {
+            position: relative;
+            transition: background-color 0.2s;
+        }
+        
+        .projet-editable:hover {
+            background: #e8f4fd;
+            outline: 1px solid #5b9bd5;
+        }
+        
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        /* NOUVEAU : Système de pagination */
+        .pagination-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #d0d0d0;
+            margin-top: auto;
+            flex-shrink: 0;
+        }
+        
+        .pagination-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .pagination-size-selector {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .pagination-size-selector select {
+            padding: 4px 8px;
+            border: 1px solid #d0d0d0;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+        
+        .pagination-controls {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .pagination-btn {
+            background: white;
+            border: 1px solid #d0d0d0;
+            padding: 6px 12px;
+            cursor: pointer;
+            font-size: 12px;
+            border-radius: 3px;
+            transition: all 0.2s;
+            min-width: 35px;
+            text-align: center;
+        }
+        
+        .pagination-btn:hover {
+            background: #f0f0f0;
+            border-color: #217346;
+        }
+        
+        .pagination-btn.active {
+            background: #217346;
+            color: white;
+            border-color: #217346;
+        }
+        
+        .pagination-btn:disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+        
+        .pagination-jump {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            margin-left: 15px;
+        }
+        
+        .pagination-jump input {
+            width: 50px;
+            padding: 4px 6px;
+            border: 1px solid #d0d0d0;
+            border-radius: 3px;
+            font-size: 12px;
+            text-align: center;
+        }
+        
+        .loading-indicator {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+            font-style: italic;
+        }
+        
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #217346;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Indicateur de performances */
+        .performance-indicator {
+            background: #e8f4fd;
+            border: 1px solid #5b9bd5;
+            padding: 8px 12px;
+            margin: 10px;
+            border-radius: 3px;
+            font-size: 11px;
+            color: #004085;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .performance-stats {
+            display: flex;
+            gap: 20px;
+        }
+        
+        .performance-stat {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .performance-stat-value {
+            font-weight: bold;
+            font-size: 14px;
+            color: #217346;
+        }
+        
+        .performance-stat-label {
+            font-size: 10px;
+            color: #666;
+        }
+        
+        /* Graphique simple */
+        .mini-chart {
+            margin-top: 15px;
+            padding: 10px;
+            background: white;
+            border: 1px solid #d0d0d0;
+            border-radius: 3px;
+        }
+        
+        .chart-bar {
+            display: flex;
+            align-items: center;
+            margin: 8px 0;
+        }
+        
+        .chart-label {
+            width: 150px;
+            font-size: 11px;
+            padding-right: 10px;
+            text-overflow: ellipsis;
+            overflow: hidden;
+            white-space: nowrap;
+        }
+        
+        .chart-value-container {
+            flex: 1;
+            height: 20px;
+            background: #e0e0e0;
+            position: relative;
+            margin: 0 10px;
+            border-radius: 3px;
+        }
+        
+        .chart-value {
+            height: 20px;
+            background: linear-gradient(90deg, #5b9bd5 0%, #4a8bc4 100%);
+            border-radius: 3px;
+            position: relative;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+            transition: width 0.3s ease;
+            
+            position: relative;
+            margin: 0 10px;
+        }
+        
+        .chart-text {
+            position: absolute;
+            right: 5px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: white;
+            font-size: 10px;
+            font-weight: bold;
+        }
+        
+        /* NOUVEAU : Sauvegarde cloud */
+        .cloud-sync-panel {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border: 2px solid #217346;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 2000;
+            display: none;
+            width: 450px;
+            max-width: 90vw;
+        }
+        
+        .cloud-sync-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1999;
+            display: none;
+        }
+        
+        .cloud-sync-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #217346;
+            margin-bottom: 20px;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .cloud-status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+            font-size: 13px;
+        }
+        
+        .cloud-status.connected {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .cloud-status.disconnected {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .cloud-status.syncing {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .cloud-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .cloud-btn {
+            padding: 8px 16px;
+            border: 1px solid #217346;
+            background: white;
+            color: #217346;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s;
+            text-align: center;
+        }
+        
+        .cloud-btn:hover {
+            background: #217346;
+            color: white;
+        }
+        
+        .cloud-btn.primary {
+            background: #217346;
+            color: white;
+        }
+        
+        .cloud-btn.primary:hover {
+            background: #1a5c37;
+        }
+        
+        .cloud-btn:disabled {
+            background: #f5f5f5;
+            color: #999;
+            cursor: not-allowed;
+        }
+        
+        .cloud-info {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            font-size: 12px;
+            margin-bottom: 15px;
+        }
+        
+        .cloud-info h4 {
+            color: #217346;
+            margin-bottom: 8px;
+        }
+        
+        .cloud-info ul {
+            margin-left: 15px;
+            margin-bottom: 10px;
+        }
+        
+        .cloud-history {
+            max-height: 150px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 3px;
+            padding: 10px;
+            font-size: 11px;
+            background: #fafafa;
+        }
+        
+        .cloud-history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 3px 0;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .cloud-history-item:last-child {
+            border-bottom: none;
+        }
+        
+        .sync-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #217346;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+            z-index: 1000;
+            display: none;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+        
+        .sync-indicator:hover {
+            background: #1a5c37;
+        }
+        
+        .sync-indicator.syncing {
+            background: #ffc107;
+            color: #212529;
+        }
+        
+        .sync-indicator.error {
+            background: #dc3545;
+        }
+        
+        .sync-indicator.offline {
+            background: #6c757d;
+        }
+        
+        .cloud-spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid transparent;
+            border-top: 2px solid currentColor;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        
+        /* Actions rapides */
+        .quick-actions {
+            position: fixed;
+            right: 20px;
+            bottom: 50px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .quick-action-btn {
+            background: #217346;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            cursor: pointer;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            font-size: 20px;
+        }
+        
+        .quick-action-btn:hover {
+            background: #1a5c37;
+            transform: scale(1.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="excel-container">
+        <!-- Zone de travail -->
+        <div class="excel-workspace">
+            <!-- Contenu des feuilles -->
+            <div id="saisie-sheet" class="sheet-content active">
+                <div class="data-entry-section">
+                    <div class="entry-title">📝 NOUVELLE ENTRÉE</div>
+                    <div class="entry-grid">
+                        <div class="entry-field">
+                            <label>Date</label>
+                            <input type="date" id="date" class="excel-date">
+                        </div>
+                        <div class="entry-field">
+                            <label>Client</label>
+                            <input type="text" id="client" list="clients-list" placeholder="Saisir ou sélectionner">
+                            <datalist id="clients-list"></datalist>
+                        </div>
+                        <div class="entry-field">
+                            <label>Nom du Projet</label>
+                            <input type="text" id="projet" list="projets-list" placeholder="Saisir ou sélectionner">
+                            <datalist id="projets-list"></datalist>
+                        </div>
+                        <div class="entry-field">
+                            <label>Tâche</label>
+                            <input type="text" id="tache" placeholder="Description de la tâche">
+                        </div>
+                        <div class="entry-field">
+                            <label>Type de Tâche</label>
+                            <input type="text" id="typeTache" list="types-list" placeholder="Saisir ou sélectionner">
+                            <datalist id="types-list">
+                                <option value="Développement">
+                                <option value="Design">
+                                <option value="Réunion">
+                                <option value="Documentation">
+                                <option value="Test">
+                                <option value="Formation">
+                                <option value="Support">
+                                <option value="Analyse">
+                            </datalist>
+                        </div>
+                        <div class="entry-field">
+                            <label>Nom (3 car.)</label>
+                            <input type="text" id="nom" maxlength="3" placeholder="ABC" style="text-transform: uppercase;">
+                        </div>
+                        <div class="entry-field">
+                            <label>Heures</label>
+                            <input type="number" id="heures" step="0.25" min="0" placeholder="0,00">
+                        </div>
+                    </div>
+                    <button class="excel-btn" onclick="ajouterEntree()">➕ Ajouter</button>
+                    <button class="excel-btn secondary" onclick="reinitialiserFormulaire()">🔄 Réinitialiser</button>
+                </div>
+                
+                <div style="padding: 20px;">
+                    <div class="entry-title">📊 APERÇU RAPIDE</div>
+                    <table class="report-table" style="max-width: 500px;">
+                        <tr>
+                            <td>Total des heures enregistrées</td>
+                            <td class="number"><strong id="stat-total">0</strong> h</td>
+                        </tr>
+                        <tr>
+                            <td>Nombre de clients</td>
+                            <td class="number"><strong id="stat-clients">0</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Nombre de projets</td>
+                            <td class="number"><strong id="stat-projets">0</strong></td>
+                        </tr>
+                        <tr>
+                            <td>Heures ce mois</td>
+                            <td class="number"><strong id="stat-mois">0</strong> h</td>
+                        </tr>
+                        <tr>
+                            <td>Moyenne par jour</td>
+                            <td class="number"><strong id="stat-moyenne">0</strong> h</td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="donnees-sheet" class="sheet-content">
+                <div class="help-message">
+                    💡 <strong>Mode Édition :</strong> Double-cliquez ou appuyez sur <strong>F2</strong> pour éditer une cellule. 
+                    <strong>Entrée</strong> = Sauvegarder | <strong>Échap</strong> = Annuler | <strong>Tab</strong> = Cellule suivante | <strong>Maj+Tab</strong> = Cellule précédente
+                </div>
+                <div class="help-message" style="background: #fff3cd; border-color: #ffc107; color: #856404;">
+                    🔍 <strong>Filtres :</strong> Utilisez les champs de recherche sous les en-têtes pour filtrer les données. 
+                    Les filtres sont cumulatifs et instantanés. Cliquez sur "Réinitialiser" pour effacer tous les filtres.
+                </div>
+                
+                <!-- NOUVEAU : Indicateur de performances -->
+                <div class="performance-indicator">
+                    <div class="performance-stats">
+                        <div class="performance-stat">
+                            <div class="performance-stat-value" id="perf-total-entries">0</div>
+                            <div class="performance-stat-label">Entrées totales</div>
+                        </div>
+                        <div class="performance-stat">
+                            <div class="performance-stat-value" id="perf-displayed-entries">0</div>
+                            <div class="performance-stat-label">Affichées</div>
+                        </div>
+                        <div class="performance-stat">
+                            <div class="performance-stat-value" id="perf-load-time">0ms</div>
+                            <div class="performance-stat-label">Temps de chargement</div>
+                        </div>
+                    </div>
+                    <div id="perf-memory-usage" style="font-size: 11px; color: #666;">
+                        Mémoire: <span id="perf-memory-value">0 KB</span>
+                    </div>
+                </div>
+                
+                <table class="excel-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Client</th>
+                            <th>Projet</th>
+                            <th>Tâche</th>
+                            <th>Type</th>
+                            <th>Nom</th>
+                            <th>Heures</th>
+                            <th>Actions</th>
+                        </tr>
+                        <tr class="filter-row">
+                            <th>
+                                <div style="display: flex; gap: 2px;">
+                                    <input type="date" id="filter-date-debut" class="filter-input" title="Date début" style="font-size: 10px; padding: 2px;">
+                                    <input type="date" id="filter-date-fin" class="filter-input" title="Date fin" style="font-size: 10px; padding: 2px;">
+                                </div>
+                            </th>
+                            <th>
+                                <input type="text" id="filter-client" class="filter-input" placeholder="Filtrer..." list="filter-clients-list">
+                                <datalist id="filter-clients-list"></datalist>
+                            </th>
+                            <th>
+                                <input type="text" id="filter-projet" class="filter-input" placeholder="Filtrer..." list="filter-projets-list">
+                                <datalist id="filter-projets-list"></datalist>
+                            </th>
+                            <th>
+                                <input type="text" id="filter-tache" class="filter-input" placeholder="Rechercher...">
+                            </th>
+                            <th>
+                                <input type="text" id="filter-type" class="filter-input" placeholder="Filtrer..." list="filter-types-list">
+                                <datalist id="filter-types-list"></datalist>
+                            </th>
+                            <th>
+                                <input type="text" id="filter-nom" class="filter-input" placeholder="ABC..." maxlength="3" style="text-transform: uppercase;">
+                            </th>
+                            <th>
+                                <div style="display: flex; gap: 2px;">
+                                    <input type="number" id="filter-heures-min" class="filter-input" placeholder="Min" step="0.25" style="width: 48%;">
+                                    <input type="number" id="filter-heures-max" class="filter-input" placeholder="Max" step="0.25" style="width: 48%;">
+                                </div>
+                            </th>
+                            <th>
+                                <button class="excel-btn" onclick="reinitialiserFiltres()" style="padding: 4px 8px; font-size: 11px;">🔄</button>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody id="data-tbody">
+                        <tr>
+                            <td colspan="8" class="empty-message">Aucune donnée. Utilisez l'onglet "Saisie" pour ajouter des entrées.</td>
+                        </tr>
+                    </tbody>
+                </table>
+                
+                <!-- NOUVEAU : Système de pagination -->
+                <div class="pagination-container">
+                    <div class="pagination-info">
+                        <div class="pagination-size-selector">
+                            <span>Afficher</span>
+                            <select id="page-size-selector" onchange="changerTaillePage()">
+                                <option value="25">25</option>
+                                <option value="50" selected>50</option>
+                                <option value="100">100</option>
+                                <option value="200">200</option>
+                                <option value="500">500</option>
+                            </select>
+                            <span>entrées par page</span>
+                        </div>
+                        <div id="pagination-stats"></div>
+                    </div>
+                    
+                    <div class="pagination-controls">
+                        <button class="pagination-btn" id="first-page-btn" onclick="allerPremierePage()" title="Première page">⏮️</button>
+                        <button class="pagination-btn" id="prev-page-btn" onclick="pagePrecedente()" title="Page précédente">◀️</button>
+                        
+                        <div id="pagination-numbers"></div>
+                        
+                        <button class="pagination-btn" id="next-page-btn" onclick="pageSuivante()" title="Page suivante">▶️</button>
+                        <button class="pagination-btn" id="last-page-btn" onclick="allerDernierePage()" title="Dernière page">⏭️</button>
+                        
+                        <div class="pagination-jump">
+                            <span>Page:</span>
+                            <input type="number" id="page-jump-input" min="1" onkeypress="sauterVersPage(event)">
+                            <span>sur <span id="total-pages">1</span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="projets-sheet" class="sheet-content">
+                <div class="report-section">
+                    <div class="report-title">GESTION DES PROJETS</div>
+                    
+                    <div class="data-entry-section" style="margin-bottom: 30px;">
+                        <div class="entry-title">➕ AJOUTER UN NOUVEAU PROJET</div>
+                        <div style="display: flex; gap: 10px; align-items: flex-end;">
+                            <div class="entry-field" style="flex: 1;">
+                                <label>Nom du projet</label>
+                                <input type="text" id="nouveau-projet-nom" placeholder="Entrez le nom du nouveau projet">
+                            </div>
+                            <div class="entry-field" style="flex: 1;">
+                                <label>Client associé (optionnel)</label>
+                                <input type="text" id="nouveau-projet-client" list="clients-list-projet" placeholder="Sélectionner ou saisir un client">
+                                <datalist id="clients-list-projet"></datalist>
+                            </div>
+                            <button class="excel-btn" onclick="ajouterProjet()">➕ Ajouter le projet</button>
+                        </div>
+                    </div>
+                    
+                    <div class="help-message">
+                        💡 <strong>Modification :</strong> Double-cliquez sur le nom d'un projet pour le modifier. 
+                        ⚠️ <strong>Attention :</strong> Renommer un projet mettra à jour toutes les entrées existantes qui utilisent ce projet.
+                    </div>
+                    
+                    <table class="excel-table" style="margin-top: 20px;">
+                        <thead>
+                            <tr>
+                                <th>N°</th>
+                                <th>Nom du Projet</th>
+                                <th>Client</th>
+                                <th style="text-align: center;">Nombre d'entrées</th>
+                                <th style="text-align: center;">Total heures</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="projets-tbody">
+                            <tr>
+                                <td colspan="6" class="empty-message">Aucun projet. Commencez par ajouter des entrées dans l'onglet "Saisie".</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <div class="stats-overview" style="margin-top: 30px;">
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-projets-count">0</div>
+                            <div class="stat-label">Projets actifs</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="total-projets-heures">0</div>
+                            <div class="stat-label">Heures totales</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="moyenne-heures-projet">0</div>
+                            <div class="stat-label">Moyenne h/projet</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div id="reporting-sheet" class="sheet-content">
+                <div class="report-section">
+                    <div class="report-title">TABLEAU CROISÉ DYNAMIQUE - REPORTING MENSUEL</div>
+                    
+                    <div class="report-controls">
+                        <label style="margin-right: 10px;">Sélectionner le mois :</label>
+                        <input type="month" id="mois-report" onchange="genererReporting()">
+                        <button class="excel-btn" onclick="genererReporting()" style="margin-left: 10px;">🔄 Actualiser</button>
+                        <button class="excel-btn secondary" onclick="exporterExcel()">📊 Exporter Excel</button>
+                    </div>
+                    
+                    <div class="report-grid">
+                        <div>
+                            <h3 style="color: #217346; margin-bottom: 10px;">Heures par Client</h3>
+                            <table class="report-table" id="report-client">
+                                <thead>
+                                    <tr>
+                                        <th>Client</th>
+                                        <th style="text-align: right;">Heures</th>
+                                        <th style="text-align: right;">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="empty-message">Sélectionnez un mois</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="mini-chart" id="chart-client"></div>
+                        </div>
+                        
+                        <div>
+                            <h3 style="color: #217346; margin-bottom: 10px;">Heures par Projet</h3>
+                            <table class="report-table" id="report-projet">
+                                <thead>
+                                    <tr>
+                                        <th>Projet</th>
+                                        <th style="text-align: right;">Heures</th>
+                                        <th style="text-align: right;">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="empty-message">Sélectionnez un mois</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="mini-chart" id="chart-projet"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="report-grid" style="margin-top: 30px;">
+                        <div>
+                            <h3 style="color: #217346; margin-bottom: 10px;">Heures par Type de Tâche</h3>
+                            <table class="report-table" id="report-type">
+                                <thead>
+                                    <tr>
+                                        <th>Type de Tâche</th>
+                                        <th style="text-align: right;">Heures</th>
+                                        <th style="text-align: right;">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="empty-message">Sélectionnez un mois</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="mini-chart" id="chart-type"></div>
+                        </div>
+                        
+                        <div>
+                            <h3 style="color: #217346; margin-bottom: 10px;">Détail par Nom</h3>
+                            <table class="report-table" id="report-nom">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th style="text-align: right;">Heures</th>
+                                        <th style="text-align: right;">%</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr>
+                                        <td colspan="3" class="empty-message">Sélectionnez un mois</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                            <div class="mini-chart" id="chart-nom"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Onglets -->
+            <div class="sheet-tabs">
+                <div class="sheet-tab active" onclick="changerOnglet('saisie')">✏️ Saisie</div>
+                <div class="sheet-tab" onclick="changerOnglet('donnees')">📊 Données</div>
+                <div class="sheet-tab" onclick="changerOnglet('reporting')">📈 Reporting</div>
+            </div>
+        </div>
+        
+        <!-- Barre de statut -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span>Prêt</span>
+            </div>
+            <div class="status-item">
+                <span id="status-count">0 entrées</span>
+            </div>
+            <div class="status-item">
+                <span>Somme : <strong id="status-sum">0</strong>h</span>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Actions rapides -->
+    <div class="quick-actions">
+        <button class="quick-action-btn" onclick="exporterCSV()" title="Exporter CSV">💾</button>
+        <button class="quick-action-btn" onclick="ouvrirPanneauCloud()" title="Sauvegarde Cloud">☁️</button>
+    </div>
+    
+    <!-- NOUVEAU : Indicateur de synchronisation -->
+    <div class="sync-indicator" id="sync-indicator" onclick="ouvrirPanneauCloud()">
+        <span id="sync-status-icon">☁️</span>
+        <span id="sync-status-text">Non connecté</span>
+    </div>
+    
+    <!-- NOUVEAU : Overlay et panneau de synchronisation cloud -->
+    <div class="cloud-sync-overlay" id="cloud-overlay" onclick="fermerPanneauCloud()"></div>
+    <div class="cloud-sync-panel" id="cloud-panel">
+        <div class="cloud-sync-title">
+            ☁️ Sauvegarde Cloud Dropbox
+            <button onclick="fermerPanneauCloud()" style="position: absolute; right: 15px; top: 15px; background: none; border: none; font-size: 20px; cursor: pointer;">✖</button>
+        </div>
+        
+        <div class="cloud-status" id="cloud-status">
+            <span id="cloud-status-icon">❌</span>
+            <span id="cloud-status-text">Non connecté à Dropbox</span>
+        </div>
+        
+        <div class="cloud-info">
+            <h4>💡 Avantages de la synchronisation :</h4>
+            <ul>
+                <li>Sauvegarde automatique de vos données</li>
+                <li>Synchronisation entre plusieurs appareils</li>
+                <li>Historique des versions</li>
+                <li>Accès hors ligne avec sync au retour</li>
+            </ul>
+            <p><strong>Fichier :</strong> <code>/TimeSheet/timesheet_data.json</code></p>
+        </div>
+        
+        <div class="cloud-controls">
+            <button class="cloud-btn primary" id="connect-btn" onclick="connecterDropbox()">🔗 Se connecter</button>
+            <button class="cloud-btn" id="disconnect-btn" onclick="deconnecterDropbox()" style="display: none;">🔌 Déconnecter</button>
+            <button class="cloud-btn" id="sync-btn" onclick="synchroniserMaintenant()" disabled>🔄 Synchroniser</button>
+            <button class="cloud-btn" id="restore-btn" onclick="restaurerDepuisCloud()" disabled>📥 Restaurer</button>
+        </div>
+        
+        <div style="margin: 15px 0;">
+            <label>
+                <input type="checkbox" id="auto-sync-checkbox" onchange="basculerSyncAuto()">
+                Synchronisation automatique (toutes les 5 minutes)
+            </label>
+        </div>
+        
+        <div class="cloud-info">
+            <h4>📋 Historique des synchronisations :</h4>
+            <div class="cloud-history" id="sync-history">
+                <div style="text-align: center; color: #999; font-style: italic;">Aucune synchronisation</div>
+            </div>
+        </div>
+        
+        <div style="text-align: center; margin-top: 20px; font-size: 11px; color: #666;">
+            <p>🔒 Vos données sont chiffrées et sécurisées</p>
+            <p>Dernière sync : <span id="last-sync-time">Jamais</span></p>
+        </div>
+    </div>
+    
+    <script>
+        // Données
+        let donnees = [];
+        let donneesFiltered = []; // Pour stocker les données filtrées
+        let filtresActifs = {}; // Pour stocker l'état des filtres
+        let clientsSet = new Set();
+        let projetsSet = new Set();
+        let typesSet = new Set(['Développement', 'Design', 'Réunion', 'Documentation', 'Test', 'Formation', 'Support', 'Analyse']);
+        let projetsInfo = {}; // Stockage des informations détaillées des projets
+        
+        // NOUVEAU : Variables de pagination
+        let paginationState = {
+            currentPage: 1,
+            pageSize: 50,
+            totalPages: 1,
+            totalEntries: 0,
+            displayedEntries: 0,
+            sortColumn: 'date',
+            sortDirection: 'desc'
+        };
+        
+        // Performance tracking
+        let performanceMetrics = {
+            lastLoadTime: 0,
+            memoryUsage: 0
+        };
+        
+        // NOUVEAU : Variables pour la sauvegarde cloud
+        let dropboxAuth = {
+            accessToken: null,
+            connected: false,
+            autoSync: false,
+            syncInterval: null,
+            lastSyncTime: null
+        };
+        
+        let syncHistory = [];
+        
+        // Configuration Dropbox (remplacez par votre App Key)
+        const DROPBOX_CONFIG = {
+            appKey: '75si64bjpg6d7jx', // À remplacer par votre clé - 75si64bjpg6d7jx or YOUR_DROPBOX_APP_KEY
+            redirectUri: window.location.origin + window.location.pathname,
+            fileName: '/TimeSheet/timesheet_data.json'
+        };
+        
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            const startTime = performance.now();
+            
+            // Charger les données
+            const saved = localStorage.getItem('timesheetData');
+            if (saved) {
+                donnees = JSON.parse(saved);
+                mettreAJourListes();
+                afficherDonnees();
+                mettreAJourStatistiques();
+            }
+            
+            // Charger les infos projets
+            const savedProjets = localStorage.getItem('projetsInfo');
+            if (savedProjets) {
+                projetsInfo = JSON.parse(savedProjets);
+            }
+            
+            // Date du jour
+            document.getElementById('date').valueAsDate = new Date();
+            
+            // Mois actuel pour reporting
+            const today = new Date();
+            document.getElementById('mois-report').value = 
+                `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}`;
+            
+            // Forcer majuscules sur le champ Nom
+            document.getElementById('nom').addEventListener('input', function(e) {
+                e.target.value = e.target.value.toUpperCase();
+            });
+            
+            // Ajouter les événements de filtrage
+            const filterInputs = document.querySelectorAll('.filter-input');
+            filterInputs.forEach(input => {
+                input.addEventListener('input', debounce(appliquerFiltres, 300));
+                input.addEventListener('change', appliquerFiltres);
+            });
+            
+            // Forcer majuscules sur le filtre Nom
+            const filterNom = document.getElementById('filter-nom');
+            if (filterNom) {
+                filterNom.addEventListener('input', function(e) {
+                    e.target.value = e.target.value.toUpperCase();
+                });
+            }
+            
+            // NOUVEAU : Initialiser la pagination
+            initialiserPagination();
+            
+            // NOUVEAU : Initialiser la synchronisation cloud
+            initialiserSauvegardeeCloud();
+            
+            // Calculer le temps de chargement initial
+            const loadTime = performance.now() - startTime;
+            performanceMetrics.lastLoadTime = loadTime;
+            mettreAJourIndicateursPerformance();
+        });
+        
+        // NOUVEAU : Initialisation de la sauvegarde cloud
+        function initialiserSauvegardeeCloud() {
+            // Charger les paramètres de synchronisation
+            const savedAuth = localStorage.getItem('dropboxAuth');
+            const savedHistory = localStorage.getItem('syncHistory');
+            
+            if (savedAuth) {
+                dropboxAuth = JSON.parse(savedAuth);
+                mettreAJourStatutCloud();
+            }
+            
+            if (savedHistory) {
+                syncHistory = JSON.parse(savedHistory);
+                mettreAJourHistoriqueSync();
+            }
+            
+            // Vérifier si on revient d'une authentification Dropbox
+            verifierTokenRetourAuth();
+            
+            // Afficher l'indicateur de sync
+            document.getElementById('sync-indicator').style.display = 'flex';
+            
+            // Démarrer la sync auto si activée
+            if (dropboxAuth.autoSync && dropboxAuth.connected) {
+                demarrerSyncAuto();
+            }
+        }
+        
+        // NOUVEAU : Fonctions de synchronisation Dropbox
+        function ouvrirPanneauCloud() {
+            document.getElementById('cloud-overlay').style.display = 'block';
+            document.getElementById('cloud-panel').style.display = 'block';
+            mettreAJourStatutCloud();
+        }
+        
+        function fermerPanneauCloud() {
+            document.getElementById('cloud-overlay').style.display = 'none';
+            document.getElementById('cloud-panel').style.display = 'none';
+        }
+        
+        function connecterDropbox() {
+            if (!DROPBOX_CONFIG.appKey || DROPBOX_CONFIG.appKey === 'YOUR_DROPBOX_APP_KEY') {
+                alert('Configuration Dropbox manquante!\n\nPour utiliser la synchronisation Dropbox :\n\n1. Créez une app sur https://www.dropbox.com/developers/apps\n2. Remplacez YOUR_DROPBOX_APP_KEY par votre clé\n3. Configurez l\'URL de redirection\n\nVoir la documentation pour plus de détails.');
+                return;
+            }
+            
+            // Générer l'URL d'authentification Dropbox OAuth 2.0
+            const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
+                `client_id=${DROPBOX_CONFIG.appKey}&` +
+                `redirect_uri=${encodeURIComponent(DROPBOX_CONFIG.redirectUri)}&` +
+                `response_type=token&` +
+                `state=dropbox_auth`;
+            
+            // Ouvrir la page d'authentification
+            window.location.href = authUrl;
+        }
+        
+        function verifierTokenRetourAuth() {
+            // Vérifier si on a un token dans l'URL (retour OAuth)
+            const hash = window.location.hash;
+            if (hash.includes('access_token') && hash.includes('state=dropbox_auth')) {
+                const params = new URLSearchParams(hash.substring(1));
+                const accessToken = params.get('access_token');
+                
+                if (accessToken) {
+                    dropboxAuth.accessToken = accessToken;
+                    dropboxAuth.connected = true;
+                    sauvegarderParametresAuth();
+                    
+                    // Nettoyer l'URL
+                    window.history.replaceState({}, document.title, window.location.pathname);
+                    
+                    // Première synchronisation
+                    synchroniserMaintenant();
+                    
+                    ajouterHistoriqueSync('Connexion établie avec Dropbox', 'success');
+                    afficherNotification('✅ Connecté à Dropbox avec succès!');
+                }
+            }
+        }
+        
+        async function synchroniserMaintenant() {
+            if (!dropboxAuth.connected) {
+                alert('Veuillez d\'abord vous connecter à Dropbox');
+                return;
+            }
+            
+            afficherIndicateurSync('syncing', '⏳ Synchronisation...');
+            
+            try {
+                const donneesASauvegarder = {
+                    donnees: donnees,
+                    projetsInfo: projetsInfo,
+                    timestamp: new Date().toISOString(),
+                    version: '1.0'
+                };
+                
+                // Simuler l'upload vers Dropbox (remplacez par l'API réelle)
+                await simulerUploadDropbox(donneesASauvegarder);
+                
+                dropboxAuth.lastSyncTime = new Date();
+                sauvegarderParametresAuth();
+                
+                ajouterHistoriqueSync('Sauvegarde réussie', 'success');
+                afficherIndicateurSync('connected', '✅ Synchronisé');
+                
+                setTimeout(() => {
+                    afficherIndicateurSync('connected', '☁️ Connecté');
+                }, 3000);
+                
+            } catch (error) {
+                console.error('Erreur de synchronisation:', error);
+                ajouterHistoriqueSync('Erreur de synchronisation: ' + error.message, 'error');
+                afficherIndicateurSync('error', '❌ Erreur sync');
+                
+                setTimeout(() => {
+                    afficherIndicateurSync('connected', '☁️ Connecté');
+                }, 5000);
+            }
+        }
+        
+        async function restaurerDepuisCloud() {
+            if (!dropboxAuth.connected) {
+                alert('Veuillez d\'abord vous connecter à Dropbox');
+                return;
+            }
+            
+            if (!confirm('⚠️ Cette action remplacera toutes vos données locales par celles du cloud.\n\nÊtes-vous sûr de vouloir continuer?')) {
+                return;
+            }
+            
+            afficherIndicateurSync('syncing', '⏳ Restauration...');
+            
+            try {
+                // Simuler le téléchargement depuis Dropbox
+                const donneesCloud = await simulerDownloadDropbox();
+                
+                if (donneesCloud) {
+                    donnees = donneesCloud.donnees || [];
+                    projetsInfo = donneesCloud.projetsInfo || {};
+                    
+                    // Reconstruire les sets
+                    clientsSet.clear();
+                    projetsSet.clear();
+                    donnees.forEach(e => {
+                        if (e.client) clientsSet.add(e.client);
+                        projetsSet.add(e.projet);
+                        typesSet.add(e.typeTache);
+                    });
+                    
+                    sauvegarder();
+                    mettreAJourListes();
+                    afficherDonnees();
+                    mettreAJourStatistiques();
+                    initialiserPagination();
+                    
+                    ajouterHistoriqueSync('Restauration réussie', 'success');
+                    afficherIndicateurSync('connected', '✅ Restauré');
+                    afficherNotification('✅ Données restaurées depuis le cloud');
+                    
+                    setTimeout(() => {
+                        afficherIndicateurSync('connected', '☁️ Connecté');
+                    }, 3000);
+                }
+                
+            } catch (error) {
+                console.error('Erreur de restauration:', error);
+                ajouterHistoriqueSync('Erreur de restauration: ' + error.message, 'error');
+                afficherIndicateurSync('error', '❌ Erreur restauration');
+                alert('❌ Erreur lors de la restauration des données');
+                
+                setTimeout(() => {
+                    afficherIndicateurSync('connected', '☁️ Connecté');
+                }, 5000);
+            }
+        }
+        
+        function deconnecterDropbox() {
+            if (confirm('Se déconnecter de Dropbox?\n\nLa synchronisation automatique sera désactivée.')) {
+                dropboxAuth = {
+                    accessToken: null,
+                    connected: false,
+                    autoSync: false,
+                    syncInterval: null,
+                    lastSyncTime: null
+                };
+                
+                arreterSyncAuto();
+                sauvegarderParametresAuth();
+                mettreAJourStatutCloud();
+                
+                ajouterHistoriqueSync('Déconnexion de Dropbox', 'info');
+                afficherIndicateurSync('offline', '☁️ Non connecté');
+                afficherNotification('Déconnecté de Dropbox');
+            }
+        }
+        
+        function basculerSyncAuto() {
+            const checkbox = document.getElementById('auto-sync-checkbox');
+            dropboxAuth.autoSync = checkbox.checked;
+            sauvegarderParametresAuth();
+            
+            if (dropboxAuth.autoSync && dropboxAuth.connected) {
+                demarrerSyncAuto();
+                ajouterHistoriqueSync('Synchronisation automatique activée', 'info');
+            } else {
+                arreterSyncAuto();
+                ajouterHistoriqueSync('Synchronisation automatique désactivée', 'info');
+            }
+        }
+        
+        function demarrerSyncAuto() {
+            arreterSyncAuto(); // Arrêter l'ancien timer s'il existe
+            
+            dropboxAuth.syncInterval = setInterval(async () => {
+                if (dropboxAuth.connected) {
+                    console.log('🔄 Synchronisation automatique...');
+                    await synchroniserMaintenant();
+                }
+            }, 5 * 60 * 1000); // Toutes les 5 minutes
+        }
+        
+        function arreterSyncAuto() {
+            if (dropboxAuth.syncInterval) {
+                clearInterval(dropboxAuth.syncInterval);
+                dropboxAuth.syncInterval = null;
+            }
+        }
+        
+        // FONCTIONS D'INTERFACE
+        function mettreAJourStatutCloud() {
+            const statusDiv = document.getElementById('cloud-status');
+            const statusIcon = document.getElementById('cloud-status-icon');
+            const statusText = document.getElementById('cloud-status-text');
+            const syncBtn = document.getElementById('sync-btn');
+            const restoreBtn = document.getElementById('restore-btn');
+            const connectBtn = document.getElementById('connect-btn');
+            const disconnectBtn = document.getElementById('disconnect-btn');
+            const autoSyncCheckbox = document.getElementById('auto-sync-checkbox');
+            const lastSyncSpan = document.getElementById('last-sync-time');
+            
+            if (dropboxAuth.connected) {
+                statusDiv.className = 'cloud-status connected';
+                statusIcon.textContent = '✅';
+                statusText.textContent = 'Connecté à Dropbox';
+                syncBtn.disabled = false;
+                restoreBtn.disabled = false;
+                connectBtn.style.display = 'none';
+                disconnectBtn.style.display = 'block';
+                autoSyncCheckbox.checked = dropboxAuth.autoSync;
+                
+                if (dropboxAuth.lastSyncTime) {
+                    lastSyncSpan.textContent = new Date(dropboxAuth.lastSyncTime).toLocaleString('fr-FR');
+                }
+                
+                afficherIndicateurSync('connected', '☁️ Connecté');
+            } else {
+                statusDiv.className = 'cloud-status disconnected';
+                statusIcon.textContent = '❌';
+                statusText.textContent = 'Non connecté à Dropbox';
+                syncBtn.disabled = true;
+                restoreBtn.disabled = true;
+                connectBtn.style.display = 'block';
+                disconnectBtn.style.display = 'none';
+                autoSyncCheckbox.checked = false;
+                
+                afficherIndicateurSync('offline', '☁️ Non connecté');
+            }
+            
+            mettreAJourHistoriqueSync();
+        }
+        
+        function afficherIndicateurSync(type, text) {
+            const indicator = document.getElementById('sync-indicator');
+            const icon = document.getElementById('sync-status-icon');
+            const textSpan = document.getElementById('sync-status-text');
+            
+            indicator.className = `sync-indicator ${type}`;
+            textSpan.textContent = text;
+            
+            if (type === 'syncing') {
+                icon.innerHTML = '<div class="cloud-spinner"></div>';
+            } else {
+                icon.textContent = text.split(' ')[0]; // Récupérer l'emoji
+            }
+        }
+        
+        function ajouterHistoriqueSync(message, type = 'info') {
+            const timestamp = new Date().toLocaleString('fr-FR');
+            syncHistory.unshift({ message, type, timestamp });
+            
+            // Garder seulement les 20 dernières entrées
+            if (syncHistory.length > 20) {
+                syncHistory = syncHistory.slice(0, 20);
+            }
+            
+            localStorage.setItem('syncHistory', JSON.stringify(syncHistory));
+            mettreAJourHistoriqueSync();
+        }
+        
+        function mettreAJourHistoriqueSync() {
+            const historyDiv = document.getElementById('sync-history');
+            
+            if (syncHistory.length === 0) {
+                historyDiv.innerHTML = '<div style="text-align: center; color: #999; font-style: italic;">Aucune synchronisation</div>';
+                return;
+            }
+            
+            historyDiv.innerHTML = syncHistory.map(item => {
+                let icon = '📝';
+                let color = '#666';
+                
+                if (item.type === 'success') { icon = '✅'; color = '#28a745'; }
+                else if (item.type === 'error') { icon = '❌'; color = '#dc3545'; }
+                else if (item.type === 'info') { icon = 'ℹ️'; color = '#007bff'; }
+                
+                return `
+                    <div class="cloud-history-item">
+                        <span style="color: ${color}">${icon} ${item.message}</span>
+                        <span style="color: #999; font-size: 10px;">${item.timestamp}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function sauvegarderParametresAuth() {
+            localStorage.setItem('dropboxAuth', JSON.stringify(dropboxAuth));
+        }
+        
+        // SIMULATION API DROPBOX (À remplacer par les vraies fonctions)
+        async function simulerUploadDropbox(data) {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    // Simuler succès/échec aléatoire (95% de succès)
+                    if (Math.random() > 0.05) {
+                        console.log('✅ Upload simulé réussi:', data);
+                        resolve(true);
+                    } else {
+                        reject(new Error('Échec de l\'upload (simulation)'));
+                    }
+                }, 1500 + Math.random() * 1000); // 1.5-2.5s de délai
+            });
+        }
+        
+        async function simulerDownloadDropbox() {
+            return new Promise((resolve, reject) => {
+                setTimeout(() => {
+                    if (Math.random() > 0.1) {
+                        // Simuler des données du cloud (peut être vide)
+                        resolve({
+                            donnees: donnees, // Pour la démo, on retourne les données locales
+                            projetsInfo: projetsInfo,
+                            timestamp: new Date().toISOString()
+                        });
+                    } else {
+                        reject(new Error('Échec du téléchargement (simulation)'));
+                    }
+                }, 1000 + Math.random() * 1000);
+            });
+        }
+        
+        // Surcharge la fonction de sauvegarde pour déclencher la sync auto
+        const sauvegarderOriginal = sauvegarder;
+        function sauvegarder() {
+            sauvegarderOriginal();
+            
+            // Synchronisation automatique si activée et connectée
+            if (dropboxAuth.connected && dropboxAuth.autoSync) {
+                // Débounce la sync automatique (attendre 30s après la dernière modification)
+                clearTimeout(sauvegarder.syncTimeout);
+                sauvegarder.syncTimeout = setTimeout(() => {
+                    synchroniserMaintenant();
+                }, 30000);
+            }
+        }
+        
+        // NOUVEAU : Fonction de debounce pour optimiser les filtres
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // NOUVEAU : Initialisation de la pagination
+        function initialiserPagination() {
+            paginationState.totalEntries = donnees.length;
+            paginationState.totalPages = Math.ceil(paginationState.totalEntries / paginationState.pageSize);
+            mettreAJourAffichagePagination();
+        }
+        
+        // NOUVEAU : Changer la taille de page
+        function changerTaillePage() {
+            const newSize = parseInt(document.getElementById('page-size-selector').value);
+            paginationState.pageSize = newSize;
+            paginationState.currentPage = 1; // Revenir à la première page
+            paginationState.totalPages = Math.ceil(paginationState.totalEntries / paginationState.pageSize);
+            
+            afficherDonnees();
+            mettreAJourAffichagePagination();
+        }
+        
+        // NOUVEAU : Navigation pagination
+        function allerPremierePage() {
+            if (paginationState.currentPage > 1) {
+                paginationState.currentPage = 1;
+                afficherDonnees();
+                mettreAJourAffichagePagination();
+            }
+        }
+        
+        function pagePrecedente() {
+            if (paginationState.currentPage > 1) {
+                paginationState.currentPage--;
+                afficherDonnees();
+                mettreAJourAffichagePagination();
+            }
+        }
+        
+        function pageSuivante() {
+            if (paginationState.currentPage < paginationState.totalPages) {
+                paginationState.currentPage++;
+                afficherDonnees();
+                mettreAJourAffichagePagination();
+            }
+        }
+        
+        function allerDernierePage() {
+            if (paginationState.currentPage < paginationState.totalPages) {
+                paginationState.currentPage = paginationState.totalPages;
+                afficherDonnees();
+                mettreAJourAffichagePagination();
+            }
+        }
+        
+        function sauterVersPage(event) {
+            if (event.key === 'Enter') {
+                const pageNumber = parseInt(event.target.value);
+                if (pageNumber >= 1 && pageNumber <= paginationState.totalPages) {
+                    paginationState.currentPage = pageNumber;
+                    afficherDonnees();
+                    mettreAJourAffichagePagination();
+                } else {
+                    event.target.value = paginationState.currentPage;
+                }
+            }
+        }
+        
+        // NOUVEAU : Mettre à jour l'affichage de la pagination
+        function mettreAJourAffichagePagination() {
+            // Statistiques
+            const start = (paginationState.currentPage - 1) * paginationState.pageSize + 1;
+            const end = Math.min(start + paginationState.pageSize - 1, paginationState.totalEntries);
+            
+            document.getElementById('pagination-stats').innerHTML = 
+                `Affichage ${start}-${end} sur ${paginationState.totalEntries} entrées`;
+            
+            // Boutons de navigation
+            const firstBtn = document.getElementById('first-page-btn');
+            const prevBtn = document.getElementById('prev-page-btn');
+            const nextBtn = document.getElementById('next-page-btn');
+            const lastBtn = document.getElementById('last-page-btn');
+            
+            firstBtn.disabled = paginationState.currentPage <= 1;
+            prevBtn.disabled = paginationState.currentPage <= 1;
+            nextBtn.disabled = paginationState.currentPage >= paginationState.totalPages;
+            lastBtn.disabled = paginationState.currentPage >= paginationState.totalPages;
+            
+            // Numéros de page
+            genererNumerosPagination();
+            
+            // Input de saut
+            document.getElementById('page-jump-input').value = paginationState.currentPage;
+            document.getElementById('total-pages').textContent = paginationState.totalPages;
+        }
+        
+        // NOUVEAU : Générer les numéros de pagination
+        function genererNumerosPagination() {
+            const container = document.getElementById('pagination-numbers');
+            container.innerHTML = '';
+            
+            const currentPage = paginationState.currentPage;
+            const totalPages = paginationState.totalPages;
+            
+            // Logique pour afficher les numéros de page (max 7 boutons)
+            let startPage = Math.max(1, currentPage - 3);
+            let endPage = Math.min(totalPages, startPage + 6);
+            
+            if (endPage - startPage < 6) {
+                startPage = Math.max(1, endPage - 6);
+            }
+            
+            // Bouton pour la première page si nécessaire
+            if (startPage > 1) {
+                const btn = creerBoutonPage(1);
+                container.appendChild(btn);
+                if (startPage > 2) {
+                    const dots = document.createElement('span');
+                    dots.textContent = '...';
+                    dots.style.padding = '6px 12px';
+                    dots.style.color = '#666';
+                    container.appendChild(dots);
+                }
+            }
+            
+            // Boutons pour les pages visibles
+            for (let i = startPage; i <= endPage; i++) {
+                const btn = creerBoutonPage(i);
+                if (i === currentPage) {
+                    btn.classList.add('active');
+                }
+                container.appendChild(btn);
+            }
+            
+            // Bouton pour la dernière page si nécessaire
+            if (endPage < totalPages) {
+                if (endPage < totalPages - 1) {
+                    const dots = document.createElement('span');
+                    dots.textContent = '...';
+                    dots.style.padding = '6px 12px';
+                    dots.style.color = '#666';
+                    container.appendChild(dots);
+                }
+                const btn = creerBoutonPage(totalPages);
+                container.appendChild(btn);
+            }
+        }
+        
+        function creerBoutonPage(pageNumber) {
+            const btn = document.createElement('button');
+            btn.className = 'pagination-btn';
+            btn.textContent = pageNumber;
+            btn.onclick = () => {
+                paginationState.currentPage = pageNumber;
+                afficherDonnees();
+                mettreAJourAffichagePagination();
+            };
+            return btn;
+        }
+        
+        // NOUVEAU : Mettre à jour les indicateurs de performance
+        function mettreAJourIndicateursPerformance() {
+            document.getElementById('perf-total-entries').textContent = paginationState.totalEntries;
+            document.getElementById('perf-displayed-entries').textContent = paginationState.displayedEntries;
+            document.getElementById('perf-load-time').textContent = Math.round(performanceMetrics.lastLoadTime) + 'ms';
+            
+            // Calcul approximatif de l'usage mémoire
+            const memoryEstimate = JSON.stringify(donnees).length / 1024; // KB approximatifs
+            document.getElementById('perf-memory-value').textContent = Math.round(memoryEstimate) + ' KB';
+        }
+        
+        function changerOnglet(nom) {
+            // Désactiver tous les onglets
+            document.querySelectorAll('.sheet-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.sheet-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Activer l'onglet sélectionné
+            event.target.classList.add('active');
+            document.getElementById(nom + '-sheet').classList.add('active');
+            
+            // Actualiser si nécessaire
+            if (nom === 'donnees') {
+                afficherDonnees();
+            } else if (nom === 'projets') {
+                afficherProjets();
+            } else if (nom === 'reporting') {
+                genererReporting();
+            }
+        }
+        
+        function ajouterEntree() {
+            const date = document.getElementById('date').value;
+            const client = document.getElementById('client').value.trim();
+            const projet = document.getElementById('projet').value.trim();
+            const tache = document.getElementById('tache').value.trim();
+            const typeTache = document.getElementById('typeTache').value.trim();
+            const nom = document.getElementById('nom').value.trim().toUpperCase();
+            const heures = parseFloat(document.getElementById('heures').value);
+            
+            if (!date || !client || !projet || !tache || !typeTache || !nom || !heures) {
+                alert('Veuillez remplir tous les champs');
+                return;
+            }
+            
+            if (nom.length !== 3) {
+                alert('Le nom doit contenir exactement 3 caractères');
+                return;
+            }
+            
+            const entree = {
+                id: Date.now(),
+                date: date,
+                client: client,
+                projet: projet,
+                tache: tache,
+                typeTache: typeTache,
+                nom: nom,
+                heures: heures
+            };
+            
+            donnees.push(entree);
+            clientsSet.add(client);
+            projetsSet.add(projet);
+            typesSet.add(typeTache);
+            
+            sauvegarder();
+            mettreAJourListes();
+            
+            // NOUVEAU : Recalculer la pagination après ajout
+            paginationState.totalEntries = donnees.length;
+            paginationState.totalPages = Math.ceil(paginationState.totalEntries / paginationState.pageSize);
+            
+            afficherDonnees();
+            mettreAJourStatistiques();
+            
+            // Réinitialiser certains champs
+            document.getElementById('tache').value = '';
+            document.getElementById('heures').value = '';
+            
+            // Notification
+            afficherNotification('Entrée ajoutée avec succès');
+        }
+        
+        function reinitialiserFormulaire() {
+            document.getElementById('date').valueAsDate = new Date();
+            document.getElementById('client').value = '';
+            document.getElementById('projet').value = '';
+            document.getElementById('tache').value = '';
+            document.getElementById('typeTache').value = '';
+            document.getElementById('nom').value = '';
+            document.getElementById('heures').value = '';
+        }
+        
+        function mettreAJourListes() {
+            // Mettre à jour les listes
+            clientsSet.clear();
+            projetsSet.clear();
+            typesSet = new Set(['Développement', 'Design', 'Réunion', 'Documentation', 'Test', 'Formation', 'Support', 'Analyse']);
+            
+            donnees.forEach(e => {
+                if (e.client) clientsSet.add(e.client);
+                projetsSet.add(e.projet);
+                typesSet.add(e.typeTache);
+            });
+            
+            // Datalist clients
+            const clientsList = document.getElementById('clients-list');
+            clientsList.innerHTML = '';
+            Array.from(clientsSet).sort().forEach(c => {
+                const option = document.createElement('option');
+                option.value = c;
+                clientsList.appendChild(option);
+            });
+            
+            // Datalist projets
+            const projetsList = document.getElementById('projets-list');
+            projetsList.innerHTML = '';
+            Array.from(projetsSet).sort().forEach(p => {
+                const option = document.createElement('option');
+                option.value = p;
+                projetsList.appendChild(option);
+            });
+            
+            // Datalist types
+            const typesList = document.getElementById('types-list');
+            typesList.innerHTML = '';
+            Array.from(typesSet).sort().forEach(t => {
+                const option = document.createElement('option');
+                option.value = t;
+                typesList.appendChild(option);
+            });
+        }
+        
+        // MODIFIÉ : Affichage avec pagination
+        function afficherDonnees(donneesAafficher = null) {
+            const startTime = performance.now();
+            const tbody = document.getElementById('data-tbody');
+            tbody.innerHTML = '';
+            
+            // Utiliser les données filtrées si elles existent, sinon toutes les données
+            let dataToShow = donneesAafficher || donnees;
+            
+            // Mettre à jour les stats de pagination
+            paginationState.totalEntries = dataToShow.length;
+            paginationState.totalPages = Math.ceil(paginationState.totalEntries / paginationState.pageSize);
+            
+            // Ajuster la page courante si nécessaire
+            if (paginationState.currentPage > paginationState.totalPages && paginationState.totalPages > 0) {
+                paginationState.currentPage = paginationState.totalPages;
+            }
+            
+            if (dataToShow.length === 0) {
+                if (donnees.length > 0 && donneesAafficher !== null) {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="no-results">
+                                <div style="font-size: 24px; margin-bottom: 10px;">🔍</div>
+                                Aucun résultat ne correspond aux filtres appliqués.<br>
+                                Essayez de modifier ou réinitialiser les filtres.
+                            </td>
+                        </tr>
+                    `;
+                } else {
+                    tbody.innerHTML = `
+                        <tr>
+                            <td colspan="8" class="empty-message">Aucune donnée. Utilisez l'onglet "Saisie" pour ajouter des entrées.</td>
+                        </tr>
+                    `;
+                }
+                paginationState.displayedEntries = 0;
+                mettreAJourAffichagePagination();
+                mettreAJourStatsFiltres(dataToShow);
+                mettreAJourIndicateursPerformance();
+                return;
+            }
+            
+            // Trier par date décroissante (ou selon la colonne sélectionnée)
+            const sorted = [...dataToShow].sort((a, b) => {
+                if (paginationState.sortColumn === 'date') {
+                    const dateA = new Date(a.date);
+                    const dateB = new Date(b.date);
+                    return paginationState.sortDirection === 'desc' ? dateB - dateA : dateA - dateB;
+                }
+                // Ajouter d'autres colonnes de tri si nécessaire
+                return 0;
+            });
+            
+            // NOUVEAU : Appliquer la pagination
+            const startIndex = (paginationState.currentPage - 1) * paginationState.pageSize;
+            const endIndex = Math.min(startIndex + paginationState.pageSize, sorted.length);
+            const pageData = sorted.slice(startIndex, endIndex);
+            
+            paginationState.displayedEntries = pageData.length;
+            
+            // Afficher les données de la page courante
+            pageData.forEach((entree, index) => {
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-id', entree.id);
+                if (donneesAafficher !== null) {
+                    tr.classList.add('filtered-row');
+                }
+                tr.innerHTML = `
+                    <td class="editable-cell" data-field="date" data-type="date">${formatDate(entree.date)}</td>
+                    <td class="editable-cell" data-field="client"><strong>${entree.client || '-'}</strong></td>
+                    <td class="editable-cell" data-field="projet"><strong>${entree.projet}</strong></td>
+                    <td class="editable-cell" data-field="tache">${entree.tache}</td>
+                    <td class="editable-cell" data-field="typeTache">${entree.typeTache}</td>
+                    <td class="editable-cell" data-field="nom" style="text-align: center; font-weight: bold;">${entree.nom || '-'}</td>
+                    <td class="editable-cell" data-field="heures" data-type="number" style="text-align: right;"><strong>${entree.heures.toFixed(2)}</strong></td>
+                    <td>
+                        <button class="excel-btn" onclick="supprimerEntree(${entree.id})" style="padding: 2px 8px; font-size: 11px;" title="Supprimer">❌</button>
+                        <button class="excel-btn secondary" onclick="sauvegarderLigne(${entree.id})" style="padding: 2px 8px; font-size: 11px; display: none;" id="save-${entree.id}" title="Sauvegarder">💾</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Ligne de total (pour toutes les données, pas seulement la page)
+            const total = dataToShow.reduce((sum, e) => sum + e.heures, 0);
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'total-row';
+            totalRow.innerHTML = `
+                <td colspan="6" style="text-align: right;"><strong>TOTAL ${donneesAafficher !== null ? '(FILTRÉ)' : ''}</strong></td>
+                <td style="text-align: right;"><strong>${total.toFixed(2)}</strong></td>
+                <td></td>
+            `;
+            tbody.appendChild(totalRow);
+            
+            // Ajouter les événements d'édition
+            ajouterEvenementsEdition();
+            
+            // Mettre à jour les listes de filtres
+            mettreAJourListesFiltres();
+            
+            // Mettre à jour les statistiques
+            mettreAJourStatsFiltres(dataToShow);
+            
+            // NOUVEAU : Mettre à jour la pagination et les performances
+            mettreAJourAffichagePagination();
+            
+            const loadTime = performance.now() - startTime;
+            performanceMetrics.lastLoadTime = loadTime;
+            mettreAJourIndicateursPerformance();
+        }
+        
+        function mettreAJourListesFiltres() {
+            // Clients
+            const filterClientsList = document.getElementById('filter-clients-list');
+            if (filterClientsList) {
+                filterClientsList.innerHTML = '';
+                Array.from(clientsSet).sort().forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c;
+                    filterClientsList.appendChild(option);
+                });
+            }
+            
+            // Projets
+            const filterProjetsList = document.getElementById('filter-projets-list');
+            if (filterProjetsList) {
+                filterProjetsList.innerHTML = '';
+                Array.from(projetsSet).sort().forEach(p => {
+                    const option = document.createElement('option');
+                    option.value = p;
+                    filterProjetsList.appendChild(option);
+                });
+            }
+            
+            // Types
+            const filterTypesList = document.getElementById('filter-types-list');
+            if (filterTypesList) {
+                filterTypesList.innerHTML = '';
+                Array.from(typesSet).sort().forEach(t => {
+                    const option = document.createElement('option');
+                    option.value = t;
+                    filterTypesList.appendChild(option);
+                });
+            }
+        }
+        
+        function mettreAJourStatsFiltres(dataToShow) {
+            const statsElement = document.getElementById('filter-stats');
+            if (!statsElement) return;
+            
+            const total = donnees.length;
+            const filtered = dataToShow.length;
+            const totalHeures = dataToShow.reduce((sum, e) => sum + e.heures, 0);
+            
+            if (filtered === total) {
+                statsElement.innerHTML = `📊 <strong>${total}</strong> entrées affichées | <strong>${totalHeures.toFixed(2)}</strong> heures totales`;
+            } else {
+                statsElement.innerHTML = `🔍 <strong>${filtered}</strong> entrées filtrées sur <strong>${total}</strong> | <strong>${totalHeures.toFixed(2)}</strong> heures filtrées`;
+                statsElement.style.color = '#217346';
+            }
+        }
+        
+        function appliquerFiltres() {
+            let filtered = [...donnees];
+            
+            // Filtre date début
+            const dateDebut = document.getElementById('filter-date-debut').value;
+            if (dateDebut) {
+                filtered = filtered.filter(e => e.date >= dateDebut);
+            }
+            
+            // Filtre date fin
+            const dateFin = document.getElementById('filter-date-fin').value;
+            if (dateFin) {
+                filtered = filtered.filter(e => e.date <= dateFin);
+            }
+            
+            // Filtre client
+            const filterClient = document.getElementById('filter-client').value.toLowerCase();
+            if (filterClient) {
+                filtered = filtered.filter(e => 
+                    (e.client || '').toLowerCase().includes(filterClient)
+                );
+            }
+            
+            // Filtre projet
+            const filterProjet = document.getElementById('filter-projet').value.toLowerCase();
+            if (filterProjet) {
+                filtered = filtered.filter(e => 
+                    e.projet.toLowerCase().includes(filterProjet)
+                );
+            }
+            
+            // Filtre tâche (recherche de texte)
+            const filterTache = document.getElementById('filter-tache').value.toLowerCase();
+            if (filterTache) {
+                filtered = filtered.filter(e => 
+                    e.tache.toLowerCase().includes(filterTache)
+                );
+            }
+            
+            // Filtre type
+            const filterType = document.getElementById('filter-type').value.toLowerCase();
+            if (filterType) {
+                filtered = filtered.filter(e => 
+                    e.typeTache.toLowerCase().includes(filterType)
+                );
+            }
+            
+            // Filtre nom
+            const filterNom = document.getElementById('filter-nom').value.toUpperCase();
+            if (filterNom) {
+                filtered = filtered.filter(e => 
+                    (e.nom || '').toUpperCase().includes(filterNom)
+                );
+            }
+            
+            // Filtre heures min
+            const heuresMin = parseFloat(document.getElementById('filter-heures-min').value);
+            if (!isNaN(heuresMin)) {
+                filtered = filtered.filter(e => e.heures >= heuresMin);
+            }
+            
+            // Filtre heures max
+            const heuresMax = parseFloat(document.getElementById('filter-heures-max').value);
+            if (!isNaN(heuresMax)) {
+                filtered = filtered.filter(e => e.heures <= heuresMax);
+            }
+            
+            // Vérifier si des filtres sont actifs
+            const hasFilters = dateDebut || dateFin || filterClient || filterProjet || 
+                              filterTache || filterType || filterNom || !isNaN(heuresMin) || !isNaN(heuresMax);
+            
+            // NOUVEAU : Revenir à la première page lors du filtrage
+            if (hasFilters) {
+                paginationState.currentPage = 1;
+                donneesFiltered = filtered;
+                afficherDonnees(filtered);
+            } else {
+                paginationState.currentPage = 1;
+                donneesFiltered = [];
+                afficherDonnees();
+            }
+        }
+        
+        function reinitialiserFiltres() {
+            // Réinitialiser tous les champs de filtre
+            document.getElementById('filter-date-debut').value = '';
+            document.getElementById('filter-date-fin').value = '';
+            document.getElementById('filter-client').value = '';
+            document.getElementById('filter-projet').value = '';
+            document.getElementById('filter-tache').value = '';
+            document.getElementById('filter-type').value = '';
+            document.getElementById('filter-nom').value = '';
+            document.getElementById('filter-heures-min').value = '';
+            document.getElementById('filter-heures-max').value = '';
+            
+            // NOUVEAU : Revenir à la première page et réafficher toutes les données
+            paginationState.currentPage = 1;
+            donneesFiltered = [];
+            afficherDonnees();
+            
+            afficherNotification('Filtres réinitialisés');
+        }
+        
+        function ajouterEvenementsEdition() {
+            const cells = document.querySelectorAll('.editable-cell');
+            cells.forEach(cell => {
+                // Double-clic pour éditer
+                cell.addEventListener('dblclick', function() {
+                    rendreEditable(this);
+                });
+                
+                // F2 pour éditer
+                cell.addEventListener('click', function() {
+                    this.focus();
+                });
+                
+                cell.addEventListener('keydown', function(e) {
+                    if (e.key === 'F2' || (e.key === 'Enter' && !this.querySelector('input'))) {
+                        e.preventDefault();
+                        rendreEditable(this);
+                    }
+                });
+                
+                // Rendre la cellule focusable
+                cell.setAttribute('tabindex', '0');
+                cell.style.cursor = 'pointer';
+                cell.title = 'Double-cliquer ou F2 pour éditer';
+            });
+        }
+        
+        function rendreEditable(cell) {
+            if (cell.querySelector('input') || cell.querySelector('select')) return;
+            
+            const field = cell.dataset.field;
+            const type = cell.dataset.type;
+            const currentValue = cell.textContent.trim();
+            const row = cell.parentElement;
+            const id = parseInt(row.dataset.id);
+            const entree = donnees.find(e => e.id === id);
+            
+            // Ajouter la classe editing
+            cell.classList.add('editing');
+            
+            // Afficher le bouton de sauvegarde
+            document.getElementById(`save-${id}`).style.display = 'inline-block';
+            
+            let input;
+            
+            if (field === 'client' || field === 'projet' || field === 'typeTache') {
+                // Créer une liste déroulante
+                input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'excel-input';
+                
+                const datalistId = `edit-${field}-${id}`;
+                input.setAttribute('list', datalistId);
+                
+                const datalist = document.createElement('datalist');
+                datalist.id = datalistId;
+                
+                let options = [];
+                if (field === 'client') options = Array.from(clientsSet);
+                else if (field === 'projet') options = Array.from(projetsSet);
+                else if (field === 'typeTache') options = Array.from(typesSet);
+                
+                options.forEach(opt => {
+                    const option = document.createElement('option');
+                    option.value = opt;
+                    datalist.appendChild(option);
+                });
+                
+                cell.appendChild(datalist);
+                input.value = currentValue === '-' ? '' : currentValue.replace(/[*]/g, '');
+                
+            } else if (type === 'date') {
+                input = document.createElement('input');
+                input.type = 'date';
+                input.className = 'excel-input';
+                input.value = entree.date;
+                
+            } else if (type === 'number') {
+                input = document.createElement('input');
+                input.type = 'number';
+                input.step = '0.25';
+                input.min = '0';
+                input.className = 'excel-input';
+                input.value = parseFloat(currentValue);
+                
+            } else if (field === 'nom') {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.maxLength = 3;
+                input.className = 'excel-input';
+                input.style.textTransform = 'uppercase';
+                input.value = currentValue === '-' ? '' : currentValue;
+                input.addEventListener('input', function(e) {
+                    e.target.value = e.target.value.toUpperCase();
+                });
+                
+            } else {
+                input = document.createElement('input');
+                input.type = 'text';
+                input.className = 'excel-input';
+                input.value = currentValue;
+            }
+            
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+            input.select();
+            
+            // Sauvegarder avec Enter, annuler avec Escape, naviguer avec Tab
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sauvegarderCellule(cell, id, field, input.value);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    annulerEdition(id);
+                } else if (e.key === 'Tab') {
+                    e.preventDefault();
+                    sauvegarderCellule(cell, id, field, input.value);
+                    // Passer à la cellule suivante
+                    setTimeout(() => {
+                        const nextCell = e.shiftKey ? 
+                            cell.previousElementSibling : 
+                            cell.nextElementSibling;
+                        if (nextCell && nextCell.classList.contains('editable-cell')) {
+                            rendreEditable(nextCell);
+                        }
+                    }, 100);
+                }
+            });
+            
+            // Sauvegarder en quittant la cellule
+            input.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (document.activeElement.id !== `save-${id}`) {
+                        sauvegarderCellule(cell, id, field, input.value);
+                    }
+                }, 100);
+            });
+        }
+        
+        function sauvegarderCellule(cell, id, field, newValue) {
+            const entree = donnees.find(e => e.id === id);
+            if (!entree) return;
+            
+            // Retirer la classe editing
+            cell.classList.remove('editing');
+            
+            // Validation et mise à jour
+            if (field === 'date' && newValue) {
+                entree.date = newValue;
+            } else if (field === 'client') {
+                entree.client = newValue.trim();
+                if (newValue.trim()) clientsSet.add(newValue.trim());
+            } else if (field === 'projet') {
+                if (!newValue.trim()) {
+                    alert('Le projet ne peut pas être vide');
+                    afficherDonnees();
+                    return;
+                }
+                entree.projet = newValue.trim();
+                projetsSet.add(newValue.trim());
+            } else if (field === 'typeTache') {
+                if (!newValue.trim()) {
+                    alert('Le type de tâche ne peut pas être vide');
+                    afficherDonnees();
+                    return;
+                }
+                entree.typeTache = newValue.trim();
+                typesSet.add(newValue.trim());
+            } else if (field === 'nom') {
+                if (newValue && newValue.length !== 3) {
+                    alert('Le nom doit contenir exactement 3 caractères');
+                    afficherDonnees();
+                    return;
+                }
+                entree.nom = newValue.toUpperCase();
+            } else if (field === 'heures') {
+                const heures = parseFloat(newValue);
+                if (isNaN(heures) || heures < 0) {
+                    alert('Nombre d\'heures invalide');
+                    afficherDonnees();
+                    return;
+                }
+                entree.heures = heures;
+            } else if (field === 'tache') {
+                if (!newValue.trim()) {
+                    alert('La tâche ne peut pas être vide');
+                    afficherDonnees();
+                    return;
+                }
+                entree.tache = newValue.trim();
+            }
+            
+            // Sauvegarder et rafraîchir
+            sauvegarder();
+            mettreAJourListes();
+            afficherDonnees();
+            mettreAJourStatistiques();
+            
+            // Notification
+            afficherNotification('Modification sauvegardée');
+        }
+        
+        function sauvegarderLigne(id) {
+            // Force la sauvegarde de toutes les cellules en édition
+            const row = document.querySelector(`tr[data-id="${id}"]`);
+            const inputs = row.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.blur();
+            });
+        }
+        
+        function annulerEdition(id) {
+            afficherDonnees();
+        }
+        
+        function genererReporting() {
+            const moisSelectionne = document.getElementById('mois-report').value;
+            if (!moisSelectionne) return;
+            
+            const [annee, mois] = moisSelectionne.split('-');
+            const donneesMois = donnees.filter(e => {
+                const d = new Date(e.date);
+                return d.getFullYear() == annee && (d.getMonth() + 1) == mois;
+            });
+            
+            if (donneesMois.length === 0) {
+                document.querySelector('#report-client tbody').innerHTML = 
+                    '<tr><td colspan="3" class="empty-message">Aucune donnée pour ce mois</td></tr>';
+                document.querySelector('#report-projet tbody').innerHTML = 
+                    '<tr><td colspan="3" class="empty-message">Aucune donnée pour ce mois</td></tr>';
+                document.querySelector('#report-type tbody').innerHTML = 
+                    '<tr><td colspan="3" class="empty-message">Aucune donnée pour ce mois</td></tr>';
+                document.querySelector('#report-nom tbody').innerHTML = 
+                    '<tr><td colspan="3" class="empty-message">Aucune donnée pour ce mois</td></tr>';
+                document.getElementById('chart-client').innerHTML = '';
+                document.getElementById('chart-projet').innerHTML = '';
+                document.getElementById('chart-type').innerHTML = '';
+                document.getElementById('chart-nom').innerHTML = '';
+                return;
+            }
+            
+            // Calculer les totaux
+            const parClient = {};
+            const parProjet = {};
+            const parType = {};
+            const parNom = {};
+            let totalMois = 0;
+            
+            donneesMois.forEach(e => {
+                const client = e.client || 'Non défini';
+                parClient[client] = (parClient[client] || 0) + e.heures;
+                parProjet[e.projet] = (parProjet[e.projet] || 0) + e.heures;
+                parType[e.typeTache] = (parType[e.typeTache] || 0) + e.heures;
+                const nom = e.nom || 'N/A';
+                parNom[nom] = (parNom[nom] || 0) + e.heures;
+                totalMois += e.heures;
+            });
+            
+            // Afficher tableaux et graphiques
+            afficherTableauReport('report-client', parClient, totalMois);
+            afficherGraphique('chart-client', parClient, Math.max(...Object.values(parClient)));
+            
+            afficherTableauReport('report-projet', parProjet, totalMois);
+            afficherGraphique('chart-projet', parProjet, Math.max(...Object.values(parProjet)));
+            
+            afficherTableauReport('report-type', parType, totalMois);
+            afficherGraphique('chart-type', parType, Math.max(...Object.values(parType)));
+            
+            afficherTableauReport('report-nom', parNom, totalMois);
+            afficherGraphique('chart-nom', parNom, Math.max(...Object.values(parNom)));
+        }
+        
+        function afficherTableauReport(tableId, data, total) {
+            const tbody = document.querySelector(`#${tableId} tbody`);
+            tbody.innerHTML = '';
+            
+            // Trier par valeur décroissante
+            const sorted = Object.entries(data).sort((a, b) => b[1] - a[1]);
+            
+            sorted.forEach(([key, value]) => {
+                const pct = ((value / total) * 100).toFixed(1);
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td>${key}</td>
+                    <td class="number">${value.toFixed(2)}</td>
+                    <td class="number">${pct}%</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Ligne de total
+            const totalRow = document.createElement('tr');
+            totalRow.className = 'total-row';
+            totalRow.innerHTML = `
+                <td>TOTAL</td>
+                <td class="number">${total.toFixed(2)}</td>
+                <td class="number">100%</td>
+            `;
+            tbody.appendChild(totalRow);
+        }
+        
+        function afficherGraphique(containerId, data, max) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = '';
+            
+            Object.entries(data).forEach(([label, value]) => {
+                const pct = (value / max) * 100;
+                const bar = document.createElement('div');
+                bar.className = 'chart-bar';
+                bar.innerHTML = `
+                    <div class="chart-label">${label}</div>
+                    <div class="chart-value" style="width: ${pct}%;">
+                        <span class="chart-text">${value.toFixed(1)}h</span>
+                    </div>
+                `;
+                container.appendChild(bar);
+            });
+        }
+        
+        function mettreAJourStatistiques() {
+            const total = donnees.reduce((sum, e) => sum + e.heures, 0);
+            const clients = new Set(donnees.map(e => e.client).filter(c => c)).size;
+            const projets = new Set(donnees.map(e => e.projet)).size;
+            
+            // Heures ce mois
+            const now = new Date();
+            const moisCourant = donnees.filter(e => {
+                const d = new Date(e.date);
+                return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
+            }).reduce((sum, e) => sum + e.heures, 0);
+            
+            // Moyenne par jour
+            const jours = new Set(donnees.map(e => e.date)).size;
+            const moyenne = jours > 0 ? (total / jours) : 0;
+            
+            document.getElementById('stat-total').textContent = total.toFixed(2);
+            document.getElementById('stat-clients').textContent = clients;
+            document.getElementById('stat-projets').textContent = projets;
+            document.getElementById('stat-mois').textContent = moisCourant.toFixed(2);
+            document.getElementById('stat-moyenne').textContent = moyenne.toFixed(2);
+        }
+        
+        function supprimerEntree(id) {
+            if (confirm('Supprimer cette entrée ?')) {
+                donnees = donnees.filter(e => e.id !== id);
+                
+                // NOUVEAU : Recalculer la pagination après suppression
+                paginationState.totalEntries = donnees.length;
+                paginationState.totalPages = Math.ceil(paginationState.totalEntries / paginationState.pageSize);
+                
+                // Si on est sur une page qui n'existe plus, revenir à la dernière page valide
+                if (paginationState.currentPage > paginationState.totalPages && paginationState.totalPages > 0) {
+                    paginationState.currentPage = paginationState.totalPages;
+                }
+                
+                sauvegarder();
+                afficherDonnees();
+                mettreAJourStatistiques();
+                mettreAJourListes();
+            }
+        }
+        
+        function sauvegarder() {
+            localStorage.setItem('timesheetData', JSON.stringify(donnees));
+            localStorage.setItem('projetsInfo', JSON.stringify(projetsInfo));
+        }
+        
+        // Fonctions pour l'onglet Projets
+        function afficherProjets() {
+            const tbody = document.getElementById('projets-tbody');
+            tbody.innerHTML = '';
+            
+            // Mettre à jour la datalist des clients
+            const clientsList = document.getElementById('clients-list-projet');
+            clientsList.innerHTML = '';
+            Array.from(clientsSet).sort().forEach(c => {
+                const option = document.createElement('option');
+                option.value = c;
+                clientsList.appendChild(option);
+            });
+            
+            if (projetsSet.size === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="empty-message">Aucun projet. Commencez par ajouter des entrées dans l\'onglet "Saisie".</td></tr>';
+                mettreAJourStatsProjets();
+                return;
+            }
+            
+            // Créer la liste des projets avec leurs statistiques
+            const projetsList = Array.from(projetsSet).sort();
+            
+            projetsList.forEach((projet, index) => {
+                // Calculer les statistiques pour ce projet
+                const entries = donnees.filter(e => e.projet === projet);
+                const totalHeures = entries.reduce((sum, e) => sum + e.heures, 0);
+                
+                // Récupérer le client depuis projetsInfo ou depuis les entrées
+                let client = projetsInfo[projet]?.client || '';
+                if (!client && entries.length > 0) {
+                    // Prendre le client le plus fréquent dans les entrées
+                    const clients = entries.map(e => e.client).filter(c => c);
+                    if (clients.length > 0) {
+                        client = clients[0]; // Ou trouver le plus fréquent
+                    }
+                }
+                
+                const tr = document.createElement('tr');
+                tr.setAttribute('data-projet', projet);
+                tr.innerHTML = `
+                    <td style="text-align: center;">${index + 1}</td>
+                    <td class="projet-editable" data-field="nom" style="cursor: pointer; font-weight: bold;">${projet}</td>
+                    <td class="projet-editable" data-field="client" style="cursor: pointer;">${client || '-'}</td>
+                    <td style="text-align: center;">${entries.length}</td>
+                    <td style="text-align: center; font-weight: bold;">${totalHeures.toFixed(2)}h</td>
+                    <td style="text-align: center;">
+                        <button class="excel-btn secondary" onclick="sauvegarderProjet('${encodeURIComponent(projet)}')" style="padding: 2px 8px; font-size: 11px; display: none;" id="save-projet-${index}">💾</button>
+                        <button class="excel-btn" onclick="supprimerProjet('${encodeURIComponent(projet)}')" style="padding: 2px 8px; font-size: 11px;" title="Supprimer">❌</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            
+            // Ajouter les événements d'édition
+            ajouterEvenementsEditionProjets();
+            mettreAJourStatsProjets();
+        }
+        
+        function ajouterEvenementsEditionProjets() {
+            const cells = document.querySelectorAll('.projet-editable');
+            cells.forEach(cell => {
+                cell.addEventListener('dblclick', function() {
+                    rendreEditableProjet(this);
+                });
+                cell.title = 'Double-cliquer pour éditer';
+            });
+        }
+        
+        function rendreEditableProjet(cell) {
+            if (cell.querySelector('input')) return;
+            
+            const field = cell.dataset.field;
+            const currentValue = cell.textContent.trim();
+            const row = cell.parentElement;
+            const projetActuel = row.dataset.projet;
+            const index = row.querySelector('td').textContent - 1;
+            
+            // Afficher le bouton de sauvegarde
+            document.getElementById(`save-projet-${index}`).style.display = 'inline-block';
+            
+            cell.classList.add('editing');
+            
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'excel-input';
+            input.value = currentValue === '-' ? '' : currentValue;
+            
+            if (field === 'client') {
+                input.setAttribute('list', 'clients-list-projet');
+            }
+            
+            cell.innerHTML = '';
+            cell.appendChild(input);
+            input.focus();
+            input.select();
+            
+            // Gestion des événements
+            input.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    sauvegarderCelluleProjet(cell, projetActuel, field, input.value);
+                } else if (e.key === 'Escape') {
+                    e.preventDefault();
+                    afficherProjets();
+                }
+            });
+            
+            input.addEventListener('blur', function() {
+                setTimeout(() => {
+                    if (document.activeElement.id !== `save-projet-${index}`) {
+                        sauvegarderCelluleProjet(cell, projetActuel, field, input.value);
+                    }
+                }, 100);
+            });
+        }
+        
+        function sauvegarderCelluleProjet(cell, projetActuel, field, newValue) {
+            cell.classList.remove('editing');
+            
+            if (field === 'nom') {
+                const nouveauNom = newValue.trim();
+                
+                if (!nouveauNom) {
+                    alert('Le nom du projet ne peut pas être vide');
+                    afficherProjets();
+                    return;
+                }
+                
+                if (nouveauNom !== projetActuel && projetsSet.has(nouveauNom)) {
+                    alert('Un projet avec ce nom existe déjà');
+                    afficherProjets();
+                    return;
+                }
+                
+                if (nouveauNom !== projetActuel) {
+                    // Renommer le projet partout
+                    renommerProjet(projetActuel, nouveauNom);
+                }
+            } else if (field === 'client') {
+                // Mettre à jour le client du projet
+                if (!projetsInfo[projetActuel]) {
+                    projetsInfo[projetActuel] = {};
+                }
+                projetsInfo[projetActuel].client = newValue.trim();
+                
+                if (newValue.trim()) {
+                    clientsSet.add(newValue.trim());
+                }
+                
+                sauvegarder();
+                mettreAJourListes();
+                afficherProjets();
+                afficherNotification('Client du projet mis à jour');
+            }
+        }
+        
+        function renommerProjet(ancienNom, nouveauNom) {
+            if (!confirm(`Êtes-vous sûr de vouloir renommer "${ancienNom}" en "${nouveauNom}" ?\nCela affectera toutes les entrées existantes.`)) {
+                afficherProjets();
+                return;
+            }
+            
+            // Mettre à jour dans les données
+            donnees.forEach(entree => {
+                if (entree.projet === ancienNom) {
+                    entree.projet = nouveauNom;
+                }
+            });
+            
+            // Mettre à jour dans projetsInfo
+            if (projetsInfo[ancienNom]) {
+                projetsInfo[nouveauNom] = projetsInfo[ancienNom];
+                delete projetsInfo[ancienNom];
+            }
+            
+            // Mettre à jour les sets
+            projetsSet.delete(ancienNom);
+            projetsSet.add(nouveauNom);
+            
+            // Sauvegarder
+            sauvegarder();
+            mettreAJourListes();
+            afficherProjets();
+            afficherDonnees();
+            mettreAJourStatistiques();
+            
+            afficherNotification(`Projet renommé : "${ancienNom}" → "${nouveauNom}"`);
+        }
+        
+        function ajouterProjet() {
+            const nom = document.getElementById('nouveau-projet-nom').value.trim();
+            const client = document.getElementById('nouveau-projet-client').value.trim();
+            
+            if (!nom) {
+                alert('Veuillez entrer un nom de projet');
+                return;
+            }
+            
+            if (projetsSet.has(nom)) {
+                alert('Un projet avec ce nom existe déjà');
+                return;
+            }
+            
+            // Ajouter le projet
+            projetsSet.add(nom);
+            
+            // Ajouter les infos du projet
+            projetsInfo[nom] = { client: client };
+            
+            if (client) {
+                clientsSet.add(client);
+            }
+            
+            // Sauvegarder et rafraîchir
+            sauvegarder();
+            mettreAJourListes();
+            afficherProjets();
+            
+            // Réinitialiser le formulaire
+            document.getElementById('nouveau-projet-nom').value = '';
+            document.getElementById('nouveau-projet-client').value = '';
+            
+            afficherNotification('Projet ajouté avec succès');
+        }
+        
+        function supprimerProjet(projetEncode) {
+            const projet = decodeURIComponent(projetEncode);
+            const entries = donnees.filter(e => e.projet === projet);
+            
+            if (entries.length > 0) {
+                if (!confirm(`Le projet "${projet}" contient ${entries.length} entrées.\nVoulez-vous vraiment supprimer ce projet ?\nLes entrées existantes seront conservées.`)) {
+                    return;
+                }
+            } else {
+                if (!confirm(`Supprimer le projet "${projet}" ?`)) {
+                    return;
+                }
+            }
+            
+            // Supprimer le projet des listes
+            projetsSet.delete(projet);
+            delete projetsInfo[projet];
+            
+            // Sauvegarder et rafraîchir
+            sauvegarder();
+            mettreAJourListes();
+            afficherProjets();
+            
+            afficherNotification('Projet supprimé');
+        }
+        
+        function sauvegarderProjet(projetEncode) {
+            const projet = decodeURIComponent(projetEncode);
+            const row = document.querySelector(`tr[data-projet="${projet}"]`);
+            const inputs = row.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.blur();
+            });
+        }
+        
+        function mettreAJourStatsProjets() {
+            const nbProjets = projetsSet.size;
+            const totalHeures = donnees.reduce((sum, e) => sum + e.heures, 0);
+            const moyenne = nbProjets > 0 ? (totalHeures / nbProjets) : 0;
+            
+            document.getElementById('total-projets-count').textContent = nbProjets;
+            document.getElementById('total-projets-heures').textContent = totalHeures.toFixed(1);
+            document.getElementById('moyenne-heures-projet').textContent = moyenne.toFixed(1);
+        }
+        
+        function exporterCSV() {
+            // Déterminer quelles données exporter
+            let dataToExport;
+            let filename;
+            
+            // Si des filtres sont actifs et qu'il y a des données filtrées
+            if (donneesFiltered && donneesFiltered.length > 0) {
+                dataToExport = donneesFiltered;
+                filename = `Timesheet_Filtre_${new Date().toISOString().split('T')[0]}.csv`;
+            } else {
+                // Sinon exporter toutes les données visibles
+                dataToExport = donnees;
+                filename = `Timesheet_${new Date().toISOString().split('T')[0]}.csv`;
+            }
+            
+            if (dataToExport.length === 0) {
+                alert('Aucune donnée à exporter');
+                return;
+            }
+            
+            let csv = '\ufeff'; // BOM pour Excel
+            csv += 'Date;Client;Projet;Tâche;Type;Nom;Heures\n';
+            
+            dataToExport.forEach(e => {
+                csv += `${e.date};"${e.client || ''}";"${e.projet}";"${e.tache}";"${e.typeTache}";"${e.nom || ''}";${e.heures.toString().replace('.', ',')}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+            
+            const message = donneesFiltered && donneesFiltered.length > 0 
+                ? `Export CSV des données filtrées (${dataToExport.length} entrées)`
+                : `Export CSV complet (${dataToExport.length} entrées)`;
+            
+            afficherNotification(message);
+        }
+        
+        function exporterExcel() {
+            if (donnees.length === 0) {
+                alert('Aucune donnée à exporter');
+                return;
+            }
+            
+            // Export CSV avec séparateur Excel
+            exporterCSV();
+            afficherNotification('Fichier CSV créé - Ouvrez avec Excel');
+        }
+        
+        function formatDate(dateStr) {
+            const d = new Date(dateStr);
+            return d.toLocaleDateString('fr-FR');
+        }
+        
+        function afficherNotification(message) {
+            const notif = document.createElement('div');
+            notif.style.cssText = `
+                position: fixed;
+                top: 60px;
+                right: 20px;
+                background: #217346;
+                color: white;
+                padding: 10px 20px;
+                border-radius: 3px;
+                box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+            `;
+            notif.textContent = message;
+            document.body.appendChild(notif);
+            
+            setTimeout(() => {
+                notif.style.opacity = '0';
+                setTimeout(() => notif.remove(), 300);
+            }, 3000);
+        }
+        
+        // Animation
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>
+            
